@@ -1,34 +1,32 @@
 const ItemsModel = require('../models/items');
-const { errors, CustomError } = require('../errors');
+const errorsItems = require('../core/errors');
+const { validateOffsetIsFinite, validateLimitIsFinite, validateResult } = require('../core/validators');
 
 class ItemsService {
 
     static getAllItems = async (offset, limit, options = {}) => {
-        if (!isFinite(offset)) {
-            throw new CustomError(errors.INVALID_OFFSET);
-        }
-        if (!isFinite(limit)) {
-            throw new CustomError(errors.INVALID_LIMIT);
-        }
 
+        validateOffsetIsFinite(offset);
+        validateLimitIsFinite(limit);
 
         const result = await ItemsModel
             .find()
             .skip(offset)
             .limit(limit)
             .exec();
+
+        validateResult(result);
         return result;
     }
 
 
     static getItemById = async (id) => {
         const result = await ItemsModel.findById(id);
-        if (!result) {
-            throw new CustomError(errors.INVALID_ID);
-        }
+        validateResult(result);
 
         return result;
     }
+
 
     static addItem = async (title, createdAt) => {
         try {
@@ -36,7 +34,7 @@ class ItemsService {
             await result.save();
             return result;
         } catch (err) {
-            throw new CustomError(errors.DATABASE_ERROR);
+            throw new errorsItems.DatabaseError();
         }
     }
 
@@ -44,9 +42,7 @@ class ItemsService {
     static updateItemById = async (id, title, createdAt) => {
 
         const result = await ItemsModel.findById(id);
-        if (!result) {
-            throw new CustomError(errors.INVALID_ID);
-        }
+        validateResult(result);
 
         result.title = title
         result.createdAt = createdAt
@@ -59,9 +55,8 @@ class ItemsService {
     static deleteItemById = async (id) => {
         const result = await ItemsModel.findById(id);
 
-        if (!result) {
-            throw new CustomError(errors.INVALID_ID);
-        }
+        validateResult(result);
+
         await result.deleteOne();
         return 'Deleted Successfully';
     }

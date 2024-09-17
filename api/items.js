@@ -1,120 +1,86 @@
 const { Router } = require('express');
 const ItemsService = require('../services/items');
-const { errors } = require('../errors');
+const { setDuration, pack } = require('../core/utility');
+const { validateError, validateOffsetAndLimit, validateTitleAndCreatedAt } = require('../core/validators');
 
 const itemRouter = Router();
-let error = null;
 
-itemRouter.get('/', async (req, res) => {
+itemRouter.use(setDuration());
+
+itemRouter.get('/', validateOffsetAndLimit, async (req, res) => {
     const { offset, limit } = req.query;
-    if (!limit) {
-        error = errors.INVALID_LIMIT;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
-    if (!offset) {
-        error = errors.INVALID_OFFSET;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
+    const { start } = req;
 
     try {
-        const result = await ItemsService.getAllItems(parseInt(offset), parseInt(limit));
+        const data = await ItemsService.getAllItems(parseInt(offset), parseInt(limit));
+        const result = pack(start, data);
         res.send(result);
     } catch (err) {
-        if (err instanceof Error) {
-            return res.send(`Error Code: ${err.code}, Message: ${err.message}`);
-        } else {
-            return res.send(`Unknown error: ${err}`);
-        }
+        const error = validateError(err);
+        res.send(error);
     }
 });
+
 
 itemRouter.get('/:id', async (req, res) => {
     const { id } = req.params;
-    if (!id) {
-        error = errors.MISSING_ID;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
+    const { start } = req;
+
     try {
-        const result = await ItemsService.getItemById(id);
+        const data = await ItemsService.getItemById(id);
+        const result = pack(start, data);
         res.send(result);
     } catch (err) {
-        if (err instanceof Error) {
-            return res.send(`Error Code: ${err.code}, Message: ${err.message}`);
-        } else {
-            return res.send(`Unknown error: ${err}`);
-        }
+        const error = validateError(err);
+        res.send(error);
     }
 });
 
 
-itemRouter.post('/', async (req, res) => {
+itemRouter.post('/', validateTitleAndCreatedAt, async (req, res) => {
     const { title, createdAt } = req.body;
-    if (!title) {
-        error = errors.MISSING_TITLE;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
-    if (!createdAt) {
-        error = errors.MISSING_CREATEDAT;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
+    const { start } = req;
 
     try {
-        const result = await ItemsService.addItem(title, createdAt);
+        const data = await ItemsService.addItem(title, createdAt);
+        const result = pack(start, data);
         res.send(result);
     } catch (err) {
-        if (err instanceof Error) {
-            return res.send(`Error Code: ${err.code}, Message: ${err.message}`);
-        } else {
-            return res.send(`Unknown error: ${err}`);
-        }
+        const error = validateError(err);
+        res.send(error);
     }
 });
 
-itemRouter.patch('/:id', async (req, res) => {
+
+itemRouter.patch('/:id', validateTitleAndCreatedAt, async (req, res) => {
     const { id } = req.params;
     const { title, createdAt } = req.body;
-    if (!id) {
-        error = errors.MISSING_ID;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
-
-    if (!title) {
-        error = errors.MISSING_TITLE;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
-    if (!createdAt) {
-        error = errors.MISSING_CREATEDAT;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
+    const { start } = req;
 
     try {
-        const result = await ItemsService.updateItemById(id, title, createdAt);
+        const data = await ItemsService.updateItemById(id, title, createdAt);
+        const result = pack(start, data)
         res.send(result);
     } catch (err) {
-        if (err instanceof Error) {
-            return res.send(`Error Code: ${err.code}, Message: ${err.message}`);
-        } else {
-            return res.send(`Unknown error: ${err}`);
-        }
+        const error = validateError(err);
+        res.send(error);
     }
 });
+
 
 itemRouter.delete('/:id', async (req, res) => {
     const { id } = req.params;
-    if (!id) {
-        error = errors.MISSING_ID;
-        return res.send(`Error Code: ${error.code}, Message: ${error.message}`);
-    }
+    const { start } = req;
+
     try {
-        const result = await ItemsService.deleteItemById(id);
+        const data = await ItemsService.deleteItemById(id);
+        const result = pack(start, data);
         res.send(result);
     } catch (err) {
-        if (err instanceof Error) {
-            return res.send(`Error Code: ${err.code}, Message: ${err.message}`);
-        } else {
-            return res.send(`Unknown error: ${err}`);
-        }
+        const error = validateError(err);
+        res.send(error);
     }
 });
+
 
 module.exports = itemRouter;
